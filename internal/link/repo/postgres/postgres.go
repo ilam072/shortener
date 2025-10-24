@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"github.com/ilam072/shortener/internal/link/repo"
 	"github.com/ilam072/shortener/internal/link/types/domain"
@@ -24,7 +25,7 @@ func (r *LinkRepo) CreateLink(ctx context.Context, link domain.Link) (string, er
 	query := `
 		INSERT INTO links(id, url, alias)
 		VALUES ($1,$2,$3)
-		RETURNING alias
+		RETURNING alias;
 	`
 
 	var alias string
@@ -36,6 +37,27 @@ func (r *LinkRepo) CreateLink(ctx context.Context, link domain.Link) (string, er
 	}
 
 	return alias, nil
+}
+
+func (r *LinkRepo) GetURLByAlias(ctx context.Context, alias string) (string, error) {
+	const op = "repo.link.GetURLByAlias"
+
+	query := `
+		SELECT url
+		FROM links
+		WHERE alias = $1
+		LIMIT 1;
+	`
+
+	var url string
+	if err := r.db.QueryRowContext(ctx, query, alias).Scan(&url); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", errutils.Wrap(op, repo.ErrAliasNotFound)
+		}
+		return "", errutils.Wrap(op, err)
+	}
+
+	return url, nil
 }
 
 func isUniqueViolation(err error) bool {
