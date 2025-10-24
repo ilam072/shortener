@@ -1,6 +1,6 @@
 package dto
 
 type Link struct {
-	URL   string `json:"url"`
+	URL   string `json:"url" validate:"required,url"`
 	Alias string `json:"alias,omitempty"`
 }
