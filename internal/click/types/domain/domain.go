@@ -12,3 +12,8 @@ type Click struct {
 	Device    string
 	IP        string
 }
+
+type ClickRow struct {
+	Aggregation string
+	Clicks      int
+}
