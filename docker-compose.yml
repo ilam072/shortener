@@ -1,0 +1,50 @@
+version: "3.9"
+
+services:
+    postgres:
+        image: postgres:16
+        container_name: url-shortener-postgres
+        restart: always
+        environment:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: url_shortener_db
+        ports:
+            - "5433:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    redis:
+        image: redis:7
+        container_name: url-shortener-redis
+        restart: always
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        command: ["redis-server", "--appendonly", "yes"]
+
+    migrator:
+        image: migrate/migrate:latest
+        container_name: url-shortener-migrator
+        depends_on:
+            postgres:
+                condition: service_healthy
+        volumes:
+            - ./migrations:/migrations
+        entrypoint: [
+            "migrate",
+            "-path", "/migrations",
+            "-database", "postgres://postgres:postgres@postgres:5432/url_shortener_db?sslmode=disable",
+            "up"
+        ]
+        restart: "on-failure"
+
+volumes:
+    postgres_data:
+    redis_data:
