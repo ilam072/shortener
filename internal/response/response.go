@@ -28,3 +28,7 @@ func Error(payload interface{}) Response {
 func (r Response) WriteJSON(c *gin.Context, code int) {
 	c.JSON(code, r)
 }
+
+func Raw(c *gin.Context, code int, payload interface{}) {
+	c.JSON(code, payload)
+}
