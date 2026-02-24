@@ -11,6 +11,7 @@ import (
 	"github.com/ilam072/shortener/internal/response"
 	"github.com/mssola/user_agent"
 	"github.com/wb-go/wbf/ginext"
+	"github.com/wb-go/wbf/retry"
 	"github.com/wb-go/wbf/zlog"
 	"net"
 	"net/http"
@@ -18,7 +19,7 @@ import (
 )
 
 type Link interface {
-	SaveLink(ctx context.Context, link linkdto.Link) (string, error)
+	SaveLink(ctx context.Context, link linkdto.Link, strategy retry.Strategy) (string, error)
 	GetURLByAlias(ctx context.Context, alias string) (string, error)
 }
 
@@ -34,10 +35,11 @@ type LinkHandler struct {
 	link      Link
 	click     Click
 	validator Validator
+	strategy  retry.Strategy
 }
 
-func NewLinkHandler(link Link, click Click, validator Validator) *LinkHandler {
-	return &LinkHandler{link: link, click: click, validator: validator}
+func NewLinkHandler(link Link, click Click, validator Validator, strategy retry.Strategy) *LinkHandler {
+	return &LinkHandler{link: link, click: click, validator: validator, strategy: strategy}
 }
 
 func (h *LinkHandler) CreateLink(c *ginext.Context) {
@@ -50,7 +52,7 @@ func (h *LinkHandler) CreateLink(c *ginext.Context) {
 		response.Error(fmt.Sprintf("validation error: %s", err.Error())).WriteJSON(c, http.StatusBadRequest)
 		return
 	}
-	alias, err := h.link.SaveLink(c.Request.Context(), link)
+	alias, err := h.link.SaveLink(c.Request.Context(), link, h.strategy)
 	if err != nil {
 		if errors.Is(err, service.ErrAliasAlreadyExists) {
 			response.Error("url with such alias already exists").WriteJSON(c, http.StatusConflict)
@@ -92,7 +94,7 @@ func (h *LinkHandler) Redirect(c *ginext.Context) {
 		IP:        getClientIP(c),
 	}
 
-	if err := h.click.SaveClick(c.Request.Context(), click); err != nil {
+	if err = h.click.SaveClick(c.Request.Context(), click); err != nil {
 		zlog.Logger.Error().Err(err).Str("alias", alias).Msg("failed to save click")
 	}
 

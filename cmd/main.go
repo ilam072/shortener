@@ -15,6 +15,7 @@ import (
 	"github.com/ilam072/shortener/pkg/db"
 	"github.com/wb-go/wbf/ginext"
 	"github.com/wb-go/wbf/redis"
+	"github.com/wb-go/wbf/retry"
 	"github.com/wb-go/wbf/zlog"
 	"net/http"
 	"os/signal"
@@ -52,6 +53,13 @@ func main() {
 	// Initialize cache
 	linkCache := cache.New(redisClient)
 
+	// Initialize retry strategy
+	strategy := retry.Strategy{
+		Attempts: cfg.Retry.Attempts,
+		Delay:    cfg.Retry.Delay,
+		Backoff:  cfg.Retry.Backoff,
+	}
+
 	// Initialize link and click repositories
 	clickRepo := clickrepo.New(DB)
 	linkRepo := linkrepo.New(DB)
@@ -61,7 +69,7 @@ func main() {
 	click := clickservice.New(clickRepo)
 
 	// Initialize link and click handlers
-	linkHandler := linkrest.NewLinkHandler(link, click, v)
+	linkHandler := linkrest.NewLinkHandler(link, click, v, strategy)
 	clickHandler := clickrest.NewClickHandler(click)
 
 	// Initialize Gin engine

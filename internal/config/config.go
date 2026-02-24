@@ -11,6 +11,7 @@ type Config struct {
 	DB     DBConfig     `mapstructure:",squash"`
 	Server ServerConfig `mapstructure:",squash"`
 	Redis  RedisConfig  `mapstructure:",squash"`
+	Retry  RetryConfig  `mapstructure:",squash"`
 }
 
 type DBConfig struct {
@@ -34,6 +35,12 @@ type RedisConfig struct {
 	Port     string `mapstructure:"REDIS_PORT"`
 	Password string `mapstructure:"REDIS_PASSWORD"`
 	DB       int    `mapstructure:"REDIS_DB"`
+}
+
+type RetryConfig struct {
+	Attempts int           `mapstructure:"RETRY_ATTEMPTS"`
+	Delay    time.Duration `mapstructure:"RETRY_DELAY"`
+	Backoff  float64       `mapstructure:"RETRY_BACKOFF"`
 }
 
 func MustLoad() *Config {

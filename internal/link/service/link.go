@@ -10,6 +10,7 @@ import (
 	"github.com/ilam072/shortener/pkg/errutils"
 	"github.com/ilam072/shortener/pkg/random"
 	"github.com/wb-go/wbf/redis"
+	"github.com/wb-go/wbf/retry"
 	"github.com/wb-go/wbf/zlog"
 )
 
@@ -37,27 +38,51 @@ var (
 	ErrAliasAlreadyExists = errors.New("alias already exists")
 )
 
-func (l *Link) SaveLink(ctx context.Context, link dto.Link) (string, error) {
+func (l *Link) SaveLink(ctx context.Context, link dto.Link, strategy retry.Strategy) (string, error) {
 	const op = "service.link.Save"
 
-	// TODO: Обработать случай коллизий при генерации рандомного алиаса
 	alias := link.Alias
-	if alias == "" {
-		alias = random.NewString(6)
+	if alias != "" {
+		domainLink := domain.Link{
+			ID:    uuid.New(),
+			URL:   link.URL,
+			Alias: alias,
+		}
+		resAlias, err := l.repo.CreateLink(ctx, domainLink)
+		if err != nil {
+			if errors.Is(err, repo.ErrAliasAlreadyExists) {
+				return "", ErrAliasAlreadyExists
+			}
+			return "", errutils.Wrap(op, err)
+		}
+		return resAlias, nil
 	}
 
-	domainLink := domain.Link{
-		ID:    uuid.New(),
-		URL:   link.URL,
-		Alias: alias,
-	}
+	var resAlias string
+	err := retry.Do(func() error {
+		tmpAlias := random.NewString(6)
+		domainLink := domain.Link{
+			ID:    uuid.New(),
+			URL:   link.URL,
+			Alias: tmpAlias,
+		}
 
-	resAlias, err := l.repo.CreateLink(ctx, domainLink)
+		var err error
+		resAlias, err = l.repo.CreateLink(ctx, domainLink)
+		if err != nil {
+			if errors.Is(err, repo.ErrAliasAlreadyExists) {
+				return err
+			}
+			return errutils.Wrap(op, err)
+		}
+		return nil
+	}, strategy)
+
 	if err != nil {
 		if errors.Is(err, repo.ErrAliasAlreadyExists) {
 			return "", ErrAliasAlreadyExists
 		}
-		return "", errutils.Wrap(op, err)
+		return "", err
 	}
 
 	return resAlias, nil
@@ -82,7 +107,7 @@ func (l *Link) GetURLByAlias(ctx context.Context, alias string) (string, error) 
 		return "", errutils.Wrap(op, err)
 	}
 
-	if err := l.cache.SetURL(ctx, alias, url); err != nil {
+	if err = l.cache.SetURL(ctx, alias, url); err != nil {
 		zlog.Logger.Error().Err(err).Str("alias", alias).Str("url", url).Msg("failed to cache url")
 	}
 
