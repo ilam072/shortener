@@ -46,12 +46,10 @@ func (h *LinkHandler) CreateLink(c *ginext.Context) {
 		response.Error("invalid request body").WriteJSON(c, http.StatusBadRequest)
 		return
 	}
-
 	if err := h.validator.Validate(link); err != nil {
 		response.Error(fmt.Sprintf("validation error: %s", err.Error())).WriteJSON(c, http.StatusBadRequest)
 		return
 	}
-
 	alias, err := h.link.SaveLink(c.Request.Context(), link)
 	if err != nil {
 		if errors.Is(err, service.ErrAliasAlreadyExists) {
@@ -62,7 +60,6 @@ func (h *LinkHandler) CreateLink(c *ginext.Context) {
 		response.Error("internal server error, try again later").WriteJSON(c, http.StatusInternalServerError)
 		return
 	}
-
 	response.Success(alias).WriteJSON(c, http.StatusCreated)
 }
 

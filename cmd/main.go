@@ -10,6 +10,7 @@ import (
 	linkrepo "github.com/ilam072/shortener/internal/link/repo/postgres"
 	linkrest "github.com/ilam072/shortener/internal/link/rest"
 	linkservice "github.com/ilam072/shortener/internal/link/service"
+	"github.com/ilam072/shortener/internal/middleware"
 	"github.com/ilam072/shortener/internal/validator"
 	"github.com/ilam072/shortener/pkg/db"
 	"github.com/wb-go/wbf/ginext"
@@ -67,6 +68,7 @@ func main() {
 	engine := ginext.New("")
 	engine.Use(ginext.Logger())
 	engine.Use(ginext.Recovery())
+	engine.Use(middleware.TimeoutMiddleware(2 * time.Second))
 
 	apiGroup := engine.Group("/api")
 	apiGroup.POST("/shorten", linkHandler.CreateLink)
