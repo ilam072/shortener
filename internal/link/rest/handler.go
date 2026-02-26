@@ -18,6 +18,7 @@ import (
 	"strings"
 )
 
+//go:generate mockgen -source=handler.go -destination=../mocks/rest_mocks.go -package=mocks
 type Link interface {
 	SaveLink(ctx context.Context, link linkdto.Link, strategy retry.Strategy) (string, error)
 	GetURLByAlias(ctx context.Context, alias string) (string, error)

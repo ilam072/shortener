@@ -14,6 +14,7 @@ import (
 	"github.com/wb-go/wbf/zlog"
 )
 
+//go:generate mockgen -source=link.go -destination=../mocks/service_mocks.go -package=mocks
 type LinkRepo interface {
 	CreateLink(ctx context.Context, link domain.Link) (string, error)
 	GetURLByAlias(ctx context.Context, alias string) (string, error)

@@ -8,6 +8,7 @@ import (
 	"github.com/ilam072/shortener/pkg/errutils"
 )
 
+//go:generate mockgen -source=click.go -destination=../mocks/service_mocks.go -package=mocks
 type ClickRepo interface {
 	CreateClick(ctx context.Context, click domain.Click) error
 	GetClicksByDay(ctx context.Context, alias string) ([]domain.ClickRow, error)

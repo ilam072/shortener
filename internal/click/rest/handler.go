@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+//go:generate mockgen -source=handler.go -destination=../mocks/rest_mocks.go -package=mocks
 type Click interface {
 	GetClicksSummary(ctx context.Context, alias string) (dto.GetClicks, error)
 }
