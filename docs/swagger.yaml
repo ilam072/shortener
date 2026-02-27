@@ -1,0 +1,154 @@
+basePath: /api
+definitions:
+  dto.ClicksByDay:
+    properties:
+      clicks:
+        type: integer
+      date:
+        type: string
+    type: object
+  dto.ClicksByMonth:
+    properties:
+      clicks:
+        type: integer
+      month:
+        type: string
+    type: object
+  dto.ClicksByUserAgent:
+    properties:
+      clicks:
+        type: integer
+      user_agent:
+        type: string
+    type: object
+  dto.GetClicks:
+    properties:
+      alias:
+        type: string
+      by_day:
+        items:
+          $ref: '#/definitions/dto.ClicksByDay'
+        type: array
+      by_month:
+        items:
+          $ref: '#/definitions/dto.ClicksByMonth'
+        type: array
+      by_user_agent:
+        items:
+          $ref: '#/definitions/dto.ClicksByUserAgent'
+        type: array
+    type: object
+  dto.Link:
+    properties:
+      alias:
+        type: string
+      url:
+        type: string
+    required:
+    - url
+    type: object
+  response.Response:
+    properties:
+      payload: {}
+      status:
+        type: string
+    type: object
+info:
+  contact: {}
+  description: REST API сервиса сокращения ссылок с аналитикой кликов
+  title: Shortener API
+  version: "1.0"
+paths:
+  /analytics/{alias}:
+    get:
+      description: 'Возвращает статистику кликов по alias: по дням, месяцам и user-agent'
+      parameters:
+      - description: Alias ссылки
+        in: path
+        name: alias
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статистика кликов
+          schema:
+            $ref: '#/definitions/dto.GetClicks'
+        "400":
+          description: alias must not be empty
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Получить аналитику по ссылке
+      tags:
+      - Analytics
+  /s/{alias}:
+    get:
+      description: Перенаправляет пользователя на оригинальный URL по alias и сохраняет
+        информацию о клике
+      parameters:
+      - description: Alias ссылки
+        in: path
+        name: alias
+        required: true
+        type: string
+      responses:
+        "302":
+          description: Redirect to original URL
+        "400":
+          description: alias must not be empty
+          schema:
+            $ref: '#/definitions/response.Response'
+        "404":
+          description: alias not found
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Редирект по короткой ссылке
+      tags:
+      - Links
+  /shorten:
+    post:
+      consumes:
+      - application/json
+      description: Создаёт новую короткую ссылку. Alias можно передать вручную или
+        он будет сгенерирован автоматически
+      parameters:
+      - description: Данные для создания ссылки
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/dto.Link'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: alias созданной ссылки
+          schema:
+            $ref: '#/definitions/response.Response'
+        "400":
+          description: invalid request body или validation error
+          schema:
+            $ref: '#/definitions/response.Response'
+        "409":
+          description: alias already exists
+          schema:
+            $ref: '#/definitions/response.Response'
+        "500":
+          description: internal server error
+          schema:
+            $ref: '#/definitions/response.Response'
+      summary: Создать короткую ссылку
+      tags:
+      - Links
+schemes:
+- http
+swagger: "2.0"

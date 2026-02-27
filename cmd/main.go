@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "github.com/ilam072/shortener/docs"
 	clickrepo "github.com/ilam072/shortener/internal/click/repo/postgres"
 	clickrest "github.com/ilam072/shortener/internal/click/rest"
 	clickservice "github.com/ilam072/shortener/internal/click/service"
@@ -13,6 +14,8 @@ import (
 	"github.com/ilam072/shortener/internal/middleware"
 	"github.com/ilam072/shortener/internal/validator"
 	"github.com/ilam072/shortener/pkg/db"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/wb-go/wbf/ginext"
 	"github.com/wb-go/wbf/redis"
 	"github.com/wb-go/wbf/retry"
@@ -23,6 +26,11 @@ import (
 	"time"
 )
 
+// @title Shortener API
+// @version 1.0
+// @description REST API сервиса сокращения ссылок с аналитикой кликов
+// @BasePath /api
+// @schemes http
 func main() {
 	// Initialize logger
 	zlog.Init()
@@ -78,6 +86,8 @@ func main() {
 	engine.Use(ginext.Recovery())
 	engine.Use(middleware.TimeoutMiddleware(2 * time.Second))
 
+	engine.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
 	apiGroup := engine.Group("/api")
 	apiGroup.POST("/shorten", linkHandler.CreateLink)
 	apiGroup.GET("/s/:alias", linkHandler.Redirect)
@@ -101,7 +111,7 @@ func main() {
 	withTimeout, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	if err := server.Shutdown(withTimeout); err != nil {
+	if err = server.Shutdown(withTimeout); err != nil {
 		zlog.Logger.Error().Err(err).Msg("server shutdown failed")
 	}
 

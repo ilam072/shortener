@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	_ "github.com/ilam072/shortener/internal/click/types/dto"
 	clickdto "github.com/ilam072/shortener/internal/click/types/dto"
 	"github.com/ilam072/shortener/internal/link/service"
+	_ "github.com/ilam072/shortener/internal/link/types/dto"
 	linkdto "github.com/ilam072/shortener/internal/link/types/dto"
 	"github.com/ilam072/shortener/internal/response"
 	"github.com/mssola/user_agent"
@@ -43,6 +45,18 @@ func NewLinkHandler(link Link, click Click, validator Validator, strategy retry.
 	return &LinkHandler{link: link, click: click, validator: validator, strategy: strategy}
 }
 
+// CreateLink godoc
+// @Summary Создать короткую ссылку
+// @Description Создаёт новую короткую ссылку. Alias можно передать вручную или он будет сгенерирован автоматически
+// @Tags Links
+// @Accept json
+// @Produce json
+// @Param input body dto.Link true "Данные для создания ссылки"
+// @Success 201 {object} response.Response "alias созданной ссылки"
+// @Failure 400 {object} response.Response "invalid request body или validation error"
+// @Failure 409 {object} response.Response "alias already exists"
+// @Failure 500 {object} response.Response "internal server error"
+// @Router /shorten [post]
 func (h *LinkHandler) CreateLink(c *ginext.Context) {
 	var link linkdto.Link
 	if err := json.NewDecoder(c.Request.Body).Decode(&link); err != nil {
@@ -66,6 +80,16 @@ func (h *LinkHandler) CreateLink(c *ginext.Context) {
 	response.Success(alias).WriteJSON(c, http.StatusCreated)
 }
 
+// Redirect godoc
+// @Summary Редирект по короткой ссылке
+// @Description Перенаправляет пользователя на оригинальный URL по alias и сохраняет информацию о клике
+// @Tags Links
+// @Param alias path string true "Alias ссылки"
+// @Success 302 "Redirect to original URL"
+// @Failure 400 {object} response.Response "alias must not be empty"
+// @Failure 404 {object} response.Response "alias not found"
+// @Failure 500 {object} response.Response "internal server error"
+// @Router /s/{alias} [get]
 func (h *LinkHandler) Redirect(c *ginext.Context) {
 	alias := c.Param("alias")
 	if alias == "" {

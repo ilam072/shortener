@@ -9,7 +9,7 @@ type Click struct {
 }
 
 type GetClicks struct {
-	Alias       string
+	Alias       string              `json:"alias"`
 	ByDay       []ClicksByDay       `json:"by_day"`
 	ByMonth     []ClicksByMonth     `json:"by_month"`
 	ByUserAgent []ClicksByUserAgent `json:"by_user_agent"`
